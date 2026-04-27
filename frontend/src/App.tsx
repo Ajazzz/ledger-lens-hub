@@ -93,7 +93,7 @@ type AnalysisStatus =
 
 // Replace with your actual FastAPI / Vercel backend URL
 // Replace with your actual FastAPI / Vercel backend URL
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "https://ledger-lens-hub.onrender.com";
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
