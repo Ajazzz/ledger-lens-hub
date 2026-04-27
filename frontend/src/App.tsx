@@ -89,16 +89,13 @@ type AnalysisStatus =
   | "done"
   | "error";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
-// Replace with your actual FastAPI / Vercel backend URL
-// Replace with your actual FastAPI / Vercel backend URL
+// ─── Config ───────────────────────────────────────────────────────────────────
 const BACKEND_URL = "https://ledger-lens-hub.onrender.com";
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
 async function handleSearch(question: string): Promise<QueryResponse> {
-  // We use direct fetch for local testing. Proxies are only needed for cross-domain cloud setups.
   const response = await fetch(`${BACKEND_URL}/query`, {
     method: "POST",
     headers: { 
@@ -130,14 +127,20 @@ async function handleSearch(question: string): Promise<QueryResponse> {
     };
   }
 
-  return {
-    answer: data.answer || data.content,
-    sources: (data.sources || []).map((s: string) => ({
+  // Safe mapping to handle strings or unexpected objects from backend
+  const formattedSources = (data.sources || []).map((s: any) => {
+    const snippetText = typeof s === 'string' ? s : (s.snippet || JSON.stringify(s));
+    return {
       document: "10K-NVDA_top30.md",
-      page_number: 1,
-      snippet: s,
-      relevance_score: 1,
-    })),
+      page_number: s.page_number || 1,
+      snippet: snippetText,
+      relevance_score: s.relevance_score || 1,
+    };
+  });
+
+  return {
+    answer: data.answer || data.content || "No response generated.",
+    sources: formattedSources,
   };
 }
 
