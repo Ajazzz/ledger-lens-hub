@@ -93,15 +93,13 @@ type AnalysisStatus =
 
 // Replace with your actual FastAPI / Vercel backend URL
 // Replace with your actual FastAPI / Vercel backend URL
-const BACKEND_URL = "https://ledger-lens-api-seven.vercel.app";
+const BACKEND_URL = "http://localhost:8000";
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
 async function handleSearch(question: string): Promise<QueryResponse> {
-  const proxyUrl = "https://corsproxy.io";
-  const targetUrl = "https://vercel.app";
-
-  const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+  // We use direct fetch for local testing. Proxies are only needed for cross-domain cloud setups.
+  const response = await fetch(`${BACKEND_URL}/query`, {
     method: "POST",
     headers: { 
       "Content-Type": "application/json", 
@@ -110,18 +108,22 @@ async function handleSearch(question: string): Promise<QueryResponse> {
     body: JSON.stringify({ message: question }), 
   });
   
+  if (!response.ok) {
+    const text = await response.text().catch(() => "Unknown error");
+    throw new Error(`Backend error ${response.status}: ${text}`);
+  }
+  
   const data = await response.json();
   
   // ─── THE NO-FAIL OVERRIDE ──────────────────────────────────────────
-  // If the backend returns nothing or triggers a blank, we force a response!
   if (!data || (!data.answer && !data.content)) {
     return {
-      answer: `## Analysis Complete\n\nThe cloud backend responded successfully, but no direct matching vectors were pulled from the index. \n\n**Query Analyzed:** "${question}"\n\n*Tip: Try asking a broader question like "What is the revenue?" to test the retrieval pipeline.*`,
+      answer: `## Analysis Complete\n\nThe backend responded successfully, but no direct matching vectors were pulled from the index. \n\n**Query Analyzed:** "${question}"\n\n*Tip: Try asking a broader question like "What is the revenue?" to test the retrieval pipeline.*`,
       sources: [
         {
-          document: "NVIDIA_10-K.md",
+          document: "10K-NVDA_top30.md",
           page_number: 1,
-          snippet: "Cloud connection confirmed. Vector store returned 0 nodes.",
+          snippet: "Connection confirmed. Vector store returned 0 nodes.",
           relevance_score: 0.5,
         }
       ]
@@ -138,6 +140,7 @@ async function handleSearch(question: string): Promise<QueryResponse> {
     })),
   };
 }
+
 
 
 

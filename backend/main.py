@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from upstash_redis import Redis
+import nest_asyncio
+nest_asyncio.apply()
 
 # Import your previous logic
 from query_engine import LedgerLensQuery
@@ -19,8 +21,9 @@ app = FastAPI(title="LedgerLens API")
 # Enable CORS for your Next.js Frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # In production, replace with your specific Replit URL
-    allow_methods=["*"],
+    allow_origins=["http://localhost:5173"], # Your Vite Frontend
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -42,6 +45,21 @@ class ChatRequest(BaseModel):
 @app.get("/")
 async def root():
     return {"status": "LedgerLens API is live"}
+
+
+from fastapi import Request, Response
+
+# 🚨 THE CORS PREFLIGHT BYPASS
+# This intercepts the browser's OPTIONS probe and answers it directly
+@app.options("/query")
+async def preflight_query(request: Request):
+    response = Response()
+    response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+    response.headers["Access-Control-Max-Age"] = "86400"
+    return response
+
 
 @app.post("/query")
 async def process_query(request: ChatRequest):
